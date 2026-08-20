@@ -1,0 +1,40 @@
+{
+  "amostras": [
+    {
+      "nivel": "verde",
+      "label": "Normal",
+      "faixa_cm": "< 6",
+      "predicao_esperada_cm": 1.48,
+      "id_ponto": "RODO_KM_01",
+      "data_fim": "2023-01-22",
+      "arquivo": "sample_alerta_verde.json"
+    },
+    {
+      "nivel": "amarelo",
+      "label": "Atencao",
+      "faixa_cm": "6 - 9",
+      "predicao_esperada_cm": 6.02,
+      "id_ponto": "RODO_KM_01",
+      "data_fim": "2023-01-28",
+      "arquivo": "sample_alerta_amarelo.json"
+    },
+    {
+      "nivel": "vermelho",
+      "label": "Alerta preventivo",
+      "faixa_cm": "9 - 10",
+      "predicao_esperada_cm": 9.43,
+      "id_ponto": "RODO_KM_01",
+      "data_fim": "2023-02-01",
+      "arquivo": "sample_alerta_vermelho.json"
+    },
+    {
+      "nivel": "laranja",
+      "label": "Poda necessaria",
+      "faixa_cm": ">= 10",
+      "predicao_esperada_cm": 13.86,
+      "id_ponto": "RODO_KM_01",
+      "data_fim": "2023-01-20",
+      "arquivo": "sample_alerta_laranja.json"
+    }
+  ]
+}

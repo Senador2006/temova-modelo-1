@@ -1,0 +1,14 @@
+venv/
+.venv/
+__pycache__/
+**/*.pyc
+.git
+logs/
+keras_tuner/
+.tuning/
+.ipynb_checkpoints/
+*.ipynb
+**/.DS_Store
+Thumbs.db
+README.md
+RELATORIO.md

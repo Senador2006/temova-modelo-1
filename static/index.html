@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modelo 1 — Previsão de Crescimento da Grama</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2d3a4d;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3dd68c;
+      --accent-dim: #2a9d63;
+      --verde: #3dd68c;
+      --amarelo: #f0c929;
+      --laranja: #ff8c42;
+      --vermelho: #ef5350;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(160deg, #0a0f14 0%, #152238 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+
+    header { margin-bottom: 1.5rem; }
+    header h1 { margin: 0 0 0.5rem; font-size: 1.75rem; font-weight: 700; }
+    header p { margin: 0; color: var(--muted); line-height: 1.5; }
+
+    .badge {
+      display: inline-block;
+      margin-top: 0.75rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      background: rgba(61, 214, 140, 0.15);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .grid { display: grid; gap: 1.25rem; }
+    @media (min-width: 768px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+    }
+
+    .card h2 {
+      margin: 0 0 1rem;
+      font-size: 1rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    label { display: block; margin-bottom: 0.35rem; font-size: 0.85rem; color: var(--muted); }
+
+    input, select, textarea, button { font: inherit; }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #111822;
+      color: var(--text);
+      margin-bottom: 0.85rem;
+    }
+
+    textarea {
+      min-height: 180px;
+      font-family: Consolas, monospace;
+      font-size: 0.8rem;
+      resize: vertical;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 1.1rem;
+      font-weight: 600;
+      transition: transform 0.1s;
+    }
+
+    button:active { transform: scale(0.98); }
+
+    .btn-primary { background: var(--accent); color: #062015; }
+    .btn-primary:hover { background: var(--accent-dim); color: #fff; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
+
+    .status {
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    .status.ok { background: rgba(61, 214, 140, 0.12); color: var(--accent); }
+    .status.err { background: rgba(239, 83, 80, 0.12); color: var(--vermelho); }
+    .status.loading { background: rgba(240, 201, 41, 0.12); color: var(--amarelo); }
+
+    /* ── Alerta principal ── */
+    .alert-banner {
+      display: none;
+      align-items: flex-start;
+      gap: 0.85rem;
+      padding: 1rem 1.15rem;
+      border-radius: 12px;
+      margin-bottom: 1.25rem;
+      border: 1px solid transparent;
+      animation: fadeIn 0.35s ease;
+    }
+
+    .alert-banner.visible { display: flex; }
+
+    .alert-banner.verde  { background: rgba(61,214,140,0.12); border-color: rgba(61,214,140,0.35); }
+    .alert-banner.amarelo { background: rgba(240,201,41,0.14); border-color: rgba(240,201,41,0.45); }
+    .alert-banner.laranja { background: rgba(255,140,66,0.14); border-color: rgba(255,140,66,0.45); }
+    .alert-banner.vermelho  { background: rgba(239,83,80,0.15); border-color: rgba(239,83,80,0.5); animation: fadeIn 0.35s ease, pulse 2s infinite; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,83,80,0); }
+      50%       { box-shadow: 0 0 0 6px rgba(239,83,80,0.18); }
+    }
+
+    .alert-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+
+    .alert-text strong { display: block; font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .alert-text span   { font-size: 0.85rem; color: var(--muted); line-height: 1.45; }
+
+    .alert-banner.verde  .alert-text strong { color: var(--verde); }
+    .alert-banner.amarelo .alert-text strong { color: var(--amarelo); }
+    .alert-banner.laranja .alert-text strong { color: var(--laranja); }
+    .alert-banner.vermelho  .alert-text strong { color: var(--vermelho); }
+
+    /* ── Resultado ── */
+    .result { text-align: center; padding: 1rem 0.5rem 0.5rem; }
+
+    .result-value {
+      font-size: 3.2rem;
+      font-weight: 800;
+      line-height: 1.1;
+      transition: color 0.3s;
+    }
+
+    .result-value.verde   { color: var(--verde); }
+    .result-value.amarelo { color: var(--amarelo); }
+    .result-value.laranja { color: var(--laranja); }
+    .result-value.vermelho  { color: var(--vermelho); }
+
+    .result-unit { font-size: 1rem; color: var(--muted); margin-top: 0.25rem; }
+    .result-meta { margin-top: 0.75rem; font-size: 0.82rem; color: var(--muted); }
+
+    .distancia-badge {
+      display: inline-block;
+      margin-top: 0.5rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+    }
+
+    /* ── Barra de escala ── */
+    .scale-wrap { margin: 1.25rem 0 0.5rem; }
+
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .scale-track {
+      position: relative;
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(to right,
+        rgba(61,214,140,0.5) 0%,
+        rgba(61,214,140,0.5) 40%,
+        rgba(240,201,41,0.7) 40%,
+        rgba(240,201,41,0.7) 60%,
+        rgba(239,83,80,0.8) 60%,
+        rgba(239,83,80,0.8) 66.67%,
+        rgba(255,140,66,0.8) 66.67%,
+        rgba(255,140,66,0.8) 100%
+      );
+      overflow: visible;
+    }
+
+    .scale-limit {
+      position: absolute;
+      top: -4px;
+      width: 2px;
+      height: 20px;
+      background: #fff;
+      border-radius: 1px;
+      transform: translateX(-50%);
+    }
+
+    .scale-limit::after {
+      content: "10 cm";
+      position: absolute;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.68rem;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .scale-limit.scale-alert {
+      background: var(--amarelo);
+      height: 16px;
+      top: -6px;
+    }
+
+    .scale-limit.scale-alert::after {
+      content: "9 cm";
+      color: var(--amarelo);
+    }
+
+    .scale-marker {
+      position: absolute;
+      top: -7px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      transform: translateX(-50%);
+      transition: left 0.5s ease, background 0.3s;
+      box-shadow: 0 0 6px rgba(0,0,0,0.5);
+    }
+
+    /* ── Legenda ── */
+    .legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-dot.amarelo  { background: var(--amarelo); }
+    .legend-dot.vermelho { background: var(--vermelho); }
+    .legend-dot.laranja  { background: var(--laranja); }
+    .legend-dot.verde    { background: var(--verde); }
+
+    /* ── Botões de amostra por alerta ── */
+    .sample-section { margin-top: 0.5rem; }
+
+    .sample-section label {
+      margin-bottom: 0.5rem;
+    }
+
+    .sample-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .btn-sample {
+      padding: 0.55rem 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      text-align: left;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-sample:active { transform: scale(0.97); }
+    .btn-sample:hover { opacity: 0.85; }
+
+    .btn-sample.verde {
+      background: rgba(61,214,140,0.15);
+      color: var(--verde);
+      border-color: rgba(61,214,140,0.35);
+    }
+
+    .btn-sample.amarelo {
+      background: rgba(240,201,41,0.15);
+      color: var(--amarelo);
+      border-color: rgba(240,201,41,0.35);
+    }
+
+    .btn-sample.vermelho {
+      background: rgba(239,83,80,0.15);
+      color: var(--vermelho);
+      border-color: rgba(239,83,80,0.35);
+    }
+
+    .btn-sample.laranja {
+      background: rgba(255,140,66,0.15);
+      color: var(--laranja);
+      border-color: rgba(255,140,66,0.35);
+    }
+
+    .btn-sample small {
+      display: block;
+      font-weight: 400;
+      opacity: 0.75;
+      margin-top: 0.1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Previsão de Crescimento da Grama</h1>
+      <p>
+        Modelo <strong>LSTM v1.2</strong> · Alerta: <strong>9 cm</strong> · Poda: <strong>10 cm</strong> ·
+        Informe <strong>20 dias consecutivos</strong> ou carregue uma amostra.
+      </p>
+      <span class="badge" id="modelBadge">Carregando modelo...</span>
+    </header>
+
+    <div id="statusBox" class="status loading">Verificando API...</div>
+
+    <div id="alertBanner" class="alert-banner" role="alert">
+      <div class="alert-icon" id="alertIcon">⚠️</div>
+      <div class="alert-text">
+        <strong id="alertTitle">—</strong>
+        <span id="alertMessage">—</span>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>Entrada rápida</h2>
+
+        <label for="idPonto">ID do ponto (trecho Rodoanel)</label>
+        <select id="idPonto">
+          <option value="RODO_KM_01">RODO_KM_01</option>
+          <option value="RODO_KM_05">RODO_KM_05</option>
+          <option value="RODO_KM_10">RODO_KM_10</option>
+          <option value="RODO_KM_15">RODO_KM_15</option>
+          <option value="RODO_KM_20">RODO_KM_20</option>
+        </select>
+
+        <div class="actions">
+          <button type="button" class="btn-secondary" id="loadSampleBtn">Carregar amostra (20 dias)</button>
+        </div>
+
+        <div class="sample-section">
+          <label>Testar níveis de alerta</label>
+          <div class="sample-grid">
+            <button type="button" class="btn-sample verde" data-nivel="verde">
+              Normal
+              <small>&lt; 6 cm</small>
+            </button>
+            <button type="button" class="btn-sample amarelo" data-nivel="amarelo">
+              Atenção
+              <small>6 – 9 cm</small>
+            </button>
+            <button type="button" class="btn-sample vermelho" data-nivel="vermelho">
+              Alerta preventivo
+              <small>9 – 10 cm</small>
+            </button>
+            <button type="button" class="btn-sample laranja" data-nivel="laranja">
+              Poda necessária
+              <small>≥ 10 cm</small>
+            </button>
+          </div>
+        </div>
+
+        <label for="jsonInput" style="margin-top: 0.5rem;">JSON de registros (array com 20+ objetos)</label>
+        <textarea id="jsonInput" placeholder='[{"ID_Ponto":"RODO_KM_01","Data":"2023-01-01", ...}]'></textarea>
+
+        <div class="actions">
+          <button type="button" class="btn-primary" id="predictBtn">Prever crescimento</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Resultado</h2>
+        <div class="result">
+          <div class="result-value" id="resultValue">—</div>
+          <div class="result-unit">crescimento acumulado previsto (cm)</div>
+          <div class="distancia-badge" id="distanciaBadge"></div>
+          <div class="result-meta" id="resultMeta">Aguardando predição...</div>
+
+          <div class="scale-wrap">
+            <div class="scale-labels">
+              <span>0 cm</span>
+              <span>6</span>
+              <span>9</span>
+              <span>10</span>
+              <span>15 cm</span>
+            </div>
+            <div class="scale-track">
+              <div class="scale-limit scale-alert" style="left: 60%" title="Alerta 9 cm"></div>
+              <div class="scale-limit" style="left: 66.67%" title="Poda 10 cm"></div>
+              <div class="scale-marker" id="scaleMarker" style="left: 0%; background: var(--muted); display: none;"></div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item"><span class="legend-dot verde"></span> Normal (&lt; 6 cm)</div>
+            <div class="legend-item"><span class="legend-dot amarelo"></span> Atenção (6 – 9 cm)</div>
+            <div class="legend-item"><span class="legend-dot vermelho"></span> Alerta preventivo (9 – 10 cm)</div>
+            <div class="legend-item"><span class="legend-dot laranja"></span> Poda necessária (≥ 10 cm)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LIMITE_ALERTA = 9;
+    const LIMITE_PODA = 10;
+    const MAX_SCALE = 15;
+
+    const ICONS = {
+      verde:    "✅",
+      amarelo:  "⚠️",
+      vermelho: "🚨",
+      laranja:  "🔶",
+    };
+
+    const CORES = {
+      verde:    "#3dd68c",
+      amarelo:  "#f0c929",
+      vermelho: "#ef5350",
+      laranja:  "#ff8c42",
+    };
+
+    const statusBox      = document.getElementById("statusBox");
+    const modelBadge     = document.getElementById("modelBadge");
+    const jsonInput      = document.getElementById("jsonInput");
+    const resultValue    = document.getElementById("resultValue");
+    const resultMeta     = document.getElementById("resultMeta");
+    const alertBanner    = document.getElementById("alertBanner");
+    const alertIcon      = document.getElementById("alertIcon");
+    const alertTitle     = document.getElementById("alertTitle");
+    const alertMessage   = document.getElementById("alertMessage");
+    const distanciaBadge = document.getElementById("distanciaBadge");
+    const scaleMarker    = document.getElementById("scaleMarker");
+
+    function calcularNivel(valor) {
+      if (valor >= LIMITE_PODA) return "laranja";
+      if (valor >= LIMITE_ALERTA) return "vermelho";
+      if (valor >= 6) return "amarelo";
+      return "verde";
+    }
+
+    function setStatus(msg, type) {
+      statusBox.textContent = msg;
+      statusBox.className = "status " + type;
+    }
+
+    function atualizarAlerta(data) {
+      const nivel = data.nivel_alerta || calcularNivel(data.crescimento_acumulado_cm);
+      const valor = data.crescimento_acumulado_cm;
+
+      alertBanner.className = "alert-banner visible " + nivel;
+      alertIcon.textContent = ICONS[nivel] || "ℹ️";
+      alertTitle.textContent = data.nivel_label || nivel.charAt(0).toUpperCase() + nivel.slice(1);
+      alertMessage.textContent = data.mensagem_alerta || data.recomendacao_poda;
+
+      resultValue.textContent = valor.toFixed(2);
+      resultValue.className = "result-value " + nivel;
+
+      const distPoda = data.distancia_limite_cm ?? Math.abs(valor - LIMITE_PODA).toFixed(2);
+      const distAlerta = data.distancia_alerta_cm ?? Math.abs(valor - LIMITE_ALERTA).toFixed(2);
+      distanciaBadge.textContent =
+        `${distPoda} cm do limite de poda (${LIMITE_PODA} cm) · ${distAlerta} cm do alerta (${LIMITE_ALERTA} cm)`;
+
+      resultMeta.textContent =
+        `Modelo ${data.model_version} · ${data.registros_utilizados} registros · look_back ${data.look_back} dias` +
+        (data.prediction_id ? ` · ID ${data.prediction_id.slice(0, 8)}…` : "") +
+        (data.latency_ms != null ? ` · ${data.latency_ms} ms` : "");
+
+      const pct = Math.min(100, Math.max(0, (valor / MAX_SCALE) * 100));
+      scaleMarker.style.display = "block";
+      scaleMarker.style.left = pct + "%";
+      scaleMarker.style.background = CORES[nivel];
+
+      if (nivel === "laranja") {
+        setStatus("🔶 Poda necessária — grama atingiu o limite de 10 cm.", "err");
+      } else if (nivel === "vermelho") {
+        setStatus("🚨 Alerta preventivo — grama entre 9 e 10 cm. Intervenção iminente.", "err");
+      } else if (nivel === "amarelo") {
+        setStatus("⚠️ Atenção — grama se aproximando do limite de alerta (9 cm).", "loading");
+      } else {
+        setStatus("✅ Crescimento dentro da faixa segura.", "ok");
+      }
+    }
+
+    async function checkHealth() {
+      try {
+        const res = await fetch("/health");
+        if (!res.ok) throw new Error("API indisponível");
+        const data = await res.json();
+        modelBadge.textContent = `Modelo v${data.model_version} · look_back=${data.look_back}`;
+        setStatus("API online e modelo carregado.", "ok");
+      } catch {
+        modelBadge.textContent = "Modelo offline";
+        setStatus("Não foi possível conectar à API. Execute: python run_api.py", "err");
+      }
+    }
+
+    async function loadSample() {
+      const idPonto = document.getElementById("idPonto").value;
+      setStatus(`Carregando amostra de ${idPonto}...`, "loading");
+      try {
+        const res = await fetch(`/sample/${idPonto}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Erro ao carregar amostra");
+        jsonInput.value = JSON.stringify(data.records, null, 2);
+        setStatus(`Amostra carregada: ${data.records.length} registros de ${idPonto}.`, "ok");
+      } catch (err) {
+        setStatus(err.message, "err");
+      }
+    }
+
+    async function loadAlertSample(nivel) {
+      setStatus(`Carregando amostra de alerta ${nivel}...`, "loading");
+      try {
+        const res = await fetch(`/sample-alerta/${nivel}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Erro ao carregar amostra");
+        jsonInput.value = JSON.stringify(data.records, null, 2);
+        document.getElementById("idPonto").value = data.records[0]?.ID_Ponto || "RODO_KM_01";
+        setStatus(
+          `Amostra "${data.label}" carregada · previsão esperada ~${data.predicao_esperada_cm} cm`,
+          "ok"
+        );
+      } catch (err) {
+        setStatus(err.message, "err");
+      }
+    }
+
+    async function predict() {
+      let records;
+      try {
+        records = JSON.parse(jsonInput.value || "[]");
+        if (!Array.isArray(records) || records.length < 20) {
+          throw new Error("Informe um array JSON com pelo menos 20 registros diários.");
+        }
+      } catch (err) {
+        setStatus("JSON inválido: " + err.message, "err");
+        return;
+      }
+
+      setStatus("Executando predição...", "loading");
+      resultValue.textContent = "...";
+      alertBanner.className = "alert-banner";
+
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ records }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Erro na predição");
+        atualizarAlerta(data);
+      } catch (err) {
+        resultValue.textContent = "—";
+        resultValue.className = "result-value";
+        resultMeta.textContent = "Erro na predição.";
+        alertBanner.className = "alert-banner";
+        setStatus(err.message, "err");
+      }
+    }
+
+    document.getElementById("loadSampleBtn").addEventListener("click", loadSample);
+    document.getElementById("predictBtn").addEventListener("click", predict);
+
+    document.querySelectorAll(".btn-sample").forEach((btn) => {
+      btn.addEventListener("click", () => loadAlertSample(btn.dataset.nivel));
+    });
+
+    checkHealth();
+  </script>
+</body>
+</html>

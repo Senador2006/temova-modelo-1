@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Ambiente virtual
+venv/
+.venv/
+env/
+
+# Segredos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs e cache de treino
+*.log
+logs/
+keras_tuner/
+.tuning/
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs e sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
